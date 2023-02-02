@@ -4,19 +4,31 @@
   become: yes
   pre_tasks:
 
-  - name: install updates centos
+  - name: update cache (CentOS)
     tags: always
     yum: 
-      update_only: yes
       update_cache: yes
+    changed_when: false  
     when: ansible_distribution == "CentOS"
 
-  - name: install updates Ubuntu
+  - name: update cache (Ubuntu)
     tags: always
     apt:
-      upgrade: dist
       update_cache: yes
+    changed_when: false  
     when: ansible_distribution == "Ubuntu"
+
+- hosts: all
+  become: yes
+  tasks:
+
+
+  - name: add ssh key for simone
+    tags: always
+    authorized_key: 
+      user: simone
+      key: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDdyT84FWqHO1khP5pizzcJ6g0mi8yO5JpUPGrfX9aTTM2OfmpehMl7uuRXW+UA+/pkwXuSaYcw6DgWlf2qgg58eIsQG7HaWnp9rpkYrhvQqOUjHucq0HLIuCpugh35t9EC8NpXeG66A5KVQnWfxr8q1YKgfOvIW9UV64g6270XVI7msG+5cBvu/lmfQ7oEzaYeRCvebpa8xE4Ae5ivf3F3u5WlGmyBaeQST2eS7lfQ5UardFccsai1xM+QNv8Cx5NvqboY8gsbdbrRzU65UNSQHKL4GZ7i/sZsv2JkDiKI7rwcHmn3Syz6kho1XteUDrk3HfTFsUDFcBUtiFvcyo5QxMo3NZlZ8PA/DZBP/eCjo5KiOD1g+qJ3NHttfnkJlCjp8KjIC2MGfMjwKtNbpoiNVL8ee5Ay1m6bslx7rNZoDgu5L5Y6Xym0aV2Zahb+RWA6o+2ifr/Zw3xcsbNlAcToRlDkATN67rgsUNPLEdOR3fdsd9kkVMpZUpp75TZ4MC8= root@DESKTOP-33EJJ2S'
+          
 
 - hosts: workstations
   become: yes
@@ -35,7 +47,7 @@
        owner: root
             
 
-- hosts: workstations
+- hosts: app
   become: yes  
   tasks:             
 
@@ -47,6 +59,31 @@
         - php
       state: present
     when: ansible_distribution == "CentOS"
+
+  - name: start httpd (CentOS)
+    tags: apache,centos,httpd
+    service:
+      name: httpd
+      state: started
+      enabled: yes
+    when: ansible_distribution == "CentOS"  
+
+  - name: change email adress for admin
+    tags: apache,centos,httpd
+    lineinfile: 
+      path: /etc/httpd/conf/httpd.conf
+      regexp: "^ServerAdmin"
+      line: ServerAdmin somebody@somewhere.net
+    when: ansible_distribution == "CentOS"
+    register: httpd
+
+  - name: restart httpd (CentOS)
+    tags: apache,centos,httpd
+    service:
+      name: httpd
+      state: restarted
+    when: httpd.changed
+
 
   - name: copy default html for site
     tags: apache, apache2, httpd
