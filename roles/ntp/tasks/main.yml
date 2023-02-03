@@ -1,0 +1,19 @@
+- name: ensure NTP is installed
+  tags: ntp
+  yum:
+    name: ntp
+    state: present
+
+- name: ensure NTP is configured
+  tags: ntp
+  template:
+    src: ntp.conf
+    dest: /etc/ntp.conf
+  notify: restart ntp
+
+- name: ensure NTP is running and enabled
+  tags: ntp
+  service:
+    name: ntp
+    state: started
+    enabled: yes    
